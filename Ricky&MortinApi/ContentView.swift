@@ -8,15 +8,51 @@
 import SwiftUI
 
 struct ContentView: View {
-    var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundColor(.accentColor)
-            Text("Hello, world!")
+    
+    @ObservedObject var characterListViewModel = CharacterListViewModel()
+    @State private var filtered: [CharacterViewModel] = []
+    @State private var query = ""
+    
+    func search(with query: String) {
+        filtered = characterListViewModel.characterList.filter {
+            $0.name.contains(query)
         }
-        .padding()
     }
+    
+    private var characters: [CharacterViewModel] {
+        filtered.isEmpty ? characterListViewModel.characterList : filtered
+        
+    }
+    /*
+    init() {
+        self.characterListViewModel = CharacterListViewModel()
+    }
+     */
+    var body: some View {
+        NavigationStack {
+            List(characters) { character in
+                HStack (spacing:10){
+                    AsyncImage(url: URL(string: character.image)) { image in
+                        image.image?.resizable().scaledToFit().frame(width:100, height: 100)
+                        
+                    }
+                    VStack(spacing:10) {
+                    
+                        Text(character.name).font(.title3).foregroundColor(.blue)
+                        Text(character.gender)
+                    }
+                    
+                }
+            }
+        }.searchable(text: $query,prompt: "Ara")
+            .onChange(of: query,perform: search)
+             
+         .task {
+             await characterListViewModel.downloadCharacter()
+            }
+               
+        }
+        
 }
 
 struct ContentView_Previews: PreviewProvider {
